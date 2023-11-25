@@ -73,9 +73,9 @@ export const useWhisper: UseWhisperHook = (config) => {
     ...config,
   }
 
-  // if (!apiKey && !onTranscribeCallback) {
-  //   throw new Error('apiKey is required if onTranscribe is not provided')
-  // }
+  if (!apiKey && !onTranscribeCallback && !onProcessAudioChunkCallback) {
+    throw new Error('apiKey is required if onTranscribe is not provided')
+  }
 
   const chunks = useRef<Blob[]>([])
   const encoder = useRef<Encoder>()
@@ -479,13 +479,17 @@ export const useWhisper: UseWhisperHook = (config) => {
           const file = new File([blob], 'speech.mp3', {
             type: 'audio/mpeg',
           })
-          // const text = await onWhispered(file)
+
+          let text = ''
 
           if (typeof onProcessAudioChunkCallback === 'function') {
-            const text = await onProcessAudioChunkCallback(file)
-            if (text) {
-              setTranscript((prev) => ({ ...prev, text }))
-            }
+            text = await onProcessAudioChunkCallback(file)
+          } else if (apiKey) {
+            text = await onWhispered(file)
+          }
+
+          if (text) {
+            setTranscript((prev) => ({ ...prev, text }))
           }
         }
       }
